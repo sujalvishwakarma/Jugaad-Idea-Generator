@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users/{userId}/savedJugaads
+    // Document ID: auto-generated
+    // Fields:
+    //   - problem: string (required, max 1000 chars)
+    //   - solution: string (required, max 10000 chars)
+    //   - createdAt: timestamp (required, immutable)
+    //   - userId: string (required, immutable, must match userId in path)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidSavedJugaad(userId) {
+      return hasRequiredFields(['problem', 'solution', 'createdAt', 'userId']) &&
+             hasOnlyAllowedFields(['problem', 'solution', 'createdAt', 'userId']) &&
+             validStringLength('problem', 1, 1000) &&
+             validStringLength('solution', 1, 10000) &&
+             request.resource.data.createdAt is timestamp &&
+             request.resource.data.userId == userId;
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    match /users/{userId}/savedJugaads/{jugaadId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidSavedJugaad(userId);
+      allow update: if isOwner(userId) && isValidSavedJugaad(userId) && areImmutableFieldsUnchanged(['createdAt', 'userId']);
+      allow delete: if isOwner(userId);
+    }
+  }
+}

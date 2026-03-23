@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "SavedJugaad": {
+      "title": "SavedJugaad",
+      "description": "A generated jugaad solution saved by the user.",
+      "type": "object",
+      "properties": {
+        "problem": {
+          "type": "string",
+          "description": "The problem the user entered."
+        },
+        "solution": {
+          "type": "string",
+          "description": "The generated jugaad solution."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "The time the jugaad was saved."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who saved the jugaad."
+        }
+      },
+      "required": ["problem", "solution", "createdAt", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/savedJugaads/{jugaadId}": {
+      "schema": {
+        "$ref": "#/entities/SavedJugaad"
+      },
+      "description": "Saved jugaads for a specific user."
+    }
+  }
+}
